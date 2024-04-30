@@ -28,19 +28,7 @@ class JobCardDocument:
         self.source_data = source_data
 
 
-    def generate_new_label(self, table_name="Builds"):
-        # read the build data from the excel file
-
-        build_data = JobCardData.get_all(self.source_data, table_name=table_name)
-
-        for page_num, page in enumerate(self.doc):
-            sku_prefix = self._extract_sku(page)
-
-            if sku_prefix and build_data['SKU'].str.contains(sku_prefix).any():
-                build_info = build_data[build_data['SKU'].str.startswith(sku_prefix)]['Build'].iloc[0]
-                    
-            self._append_html(build_info, page)
-
+    ''' private methods '''
 
     def _extract_sku(self, page):
 
@@ -75,6 +63,22 @@ class JobCardDocument:
         page.insert_htmlbox(rect, html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
 
 
+    ''' public methods '''
+
+    def generate_new_label(self, table_name="Builds"):
+        # read the build data from the excel file
+
+        build_data = JobCardData.get_all(self.source_data, table_name=table_name)
+
+        for page_num, page in enumerate(self.doc):
+            sku_prefix = self._extract_sku(page)
+
+            if sku_prefix and build_data['SKU'].str.contains(sku_prefix).any():
+                build_info = build_data[build_data['SKU'].str.startswith(sku_prefix)]['Build'].iloc[0]
+                    
+            self._append_html(build_info, page)
+
+
     def save_and_close(self, output_file):
         self.doc.save(output_file)
         self.doc.close()
@@ -103,7 +107,7 @@ if __name__ == '__main__':
         # settings
 
         source_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Example job card.pdf'
-        build_data_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Build Example.xlsx'
+        build_data_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Build Example v1.xlsx'
         output_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Modified Example job card.pdf'
 
         # open the job card template
