@@ -14,11 +14,7 @@ Read the build data from an Excel file and apply it to the PDF job card.
 ''' PyMuPDF docs: https://pymupdf.readthedocs.io/en/latest/recipes-text.html '''
 
 import fitz  # PyMuPDF
-import os
 import pandas as pd
-from reportlab.lib.colors import black
-from reportlab.pdfgen import canvas
-import io
 
 
 class JobCardDocument:
@@ -106,9 +102,9 @@ if __name__ == '__main__':
     try:
         # settings
 
-        source_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Example job card.pdf'
-        build_data_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Build Example v1.xlsx'
-        output_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Modified Example job card.pdf'
+        source_file = './src/mattress_build/test/data/Example job card.pdf'
+        build_data_file = './src/mattress_build/test/data/Build Example v1.xlsx'
+        output_file = './src/mattress_build/test/data/Modified Example job card.pdf'
 
         # open the job card template
 
