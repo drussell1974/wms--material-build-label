@@ -102,9 +102,9 @@ if __name__ == '__main__':
     try:
         # settings
 
-        source_file = './src/mattress_build/test/data/Example job card.pdf'
-        build_data_file = './src/mattress_build/test/data/Build Example v1.xlsx'
-        output_file = './src/mattress_build/test/data/Modified Example job card.pdf'
+        source_file = './tests/data/Example job card.pdf'
+        build_data_file = './tests/data/Build Example v1.xlsx'
+        output_file = './tests/data/Modified Example job card.pdf'
 
         # open the job card template
 
