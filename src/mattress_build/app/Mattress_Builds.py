@@ -20,9 +20,12 @@ import pandas as pd
 class JobCardDocument:
 
     def __init__(self, source_file, source_data):
+
         self.doc = fitz.open(source_file)
         self.source_data = source_data
+        self.build_info = None
         self.pages = []
+        self.html = ""
 
 
     ''' private methods '''
@@ -39,28 +42,24 @@ class JobCardDocument:
         return None
 
 
-    def _append_html(self, build_info, page):
+    def _append_html(self, page, build_info):
         """ append the build information to the page as an html table"""
+        
+        text = ""
+        for line in build_info:
+            text = text + f"<tr><td>{line.strip()}</td></tr>"
+        self.html = f"<body><table>{text}</table></body>"
 
-        html = """
-        <body>
-            <table>
-            """
-        
-        for line in build_info.split(';'):
-            html += f"<tr><td>{line.strip()}</td></tr>"
-        
-        html += """
-            </table>
-        </body>
-        """
-        
         # set the area for the bill of materials textarea
 
         rect = page.rect + (5, 250, -5, -5)
 
         # we must specify an Archive because of the image
-        page.insert_htmlbox(rect, html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
+        page.insert_htmlbox(rect, self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
+
+
+    def _get_doc_pages(self):
+        return enumerate(self.doc)
 
 
     ''' public methods '''
@@ -70,14 +69,14 @@ class JobCardDocument:
 
         build_data = JobCardData.get_all(self.source_data, table_name=table_name)
 
-        for page_num, page in enumerate(self.doc):
+        for page_num, page in self._get_doc_pages():
             sku_prefix = self._extract_sku(page)
+            
+            self.build_info = JobCardData.get_build_info(build_data, sku_prefix)
+            
+            self._append_html(page, self.build_info)
 
-            if sku_prefix and build_data['SKU'].str.contains(sku_prefix).any():
-                build_info = build_data[build_data['SKU'].str.startswith(sku_prefix)]['Build'].iloc[0]
-                    
-            self._append_html(build_info, page)
-        
+            self.pages.append(page)
 
 
     def save_and_close(self, output_file):
@@ -97,7 +96,28 @@ class JobCardData:
         build_data = pd.read_excel(source, sheet_name=table_name)
         build_data['SKU'] = build_data['SKU'].fillna('')
 
+        print(build_data['SKU'])
+        print(type(build_data['SKU']))
+
         return build_data
+    
+
+    @staticmethod
+    def get_build_info(build_data, sku_prefix):
+        """ get the build information for the SKU prefix """
+        build_cols = None
+        
+        if sku_prefix and build_data['SKU'].str.contains(sku_prefix).any():
+            sku = build_data['SKU'].str.startswith(sku_prefix)
+            sku_build_data = build_data[sku]
+            #print("get sku_build_data['Build']...", sku_build_data)
+            build_cols = sku_build_data['Build']
+            #print("get - (build_cols:", build_cols, ", type:", type(build_cols), ")...")
+            build_cols = build_cols.iloc[0]
+        print("build_cols", build_cols)
+        print(type(build_cols))
+
+        return build_cols
 
 
 # program entry point
@@ -115,7 +135,7 @@ if __name__ == '__main__':
 
         doc = JobCardDocument(source_file, build_data_file)
 
-        doc.generate_new_label(table_name="Sheet1")
+        doc.generate_new_label("Sheet1")
         
         doc.save_and_close(output_file)
 
