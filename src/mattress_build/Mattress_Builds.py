@@ -23,17 +23,21 @@ import io
 
 class JobCardDocument:
 
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def get_job_card_template(source):
-        """ open the job card template """
-
-        return fitz.open(source)
+    def __init__(self, source):
+        self.doc = fitz.open(source)
 
 
-    def extract_sku(self):
+    def build(self, build_data):
+        for page_num, page in enumerate(self.doc):
+            sku_prefix = self._extract_sku(page)
+
+            if sku_prefix and build_data['SKU'].str.contains(sku_prefix).any():
+                build_info = build_data[build_data['SKU'].str.startswith(sku_prefix)]['Build'].iloc[0]
+                    
+            self._append_html(build_info, page)
+
+
+    def _extract_sku(self, page):
 
         text = page.get_text("text")
         lines = text.split('\n')
@@ -44,8 +48,7 @@ class JobCardDocument:
         return None
 
 
-    @staticmethod
-    def append_build(build_info, page):
+    def _append_html(self, build_info, page):
         """ append the build information to the page as an html table"""
 
         html = """
@@ -67,7 +70,12 @@ class JobCardDocument:
         page.insert_htmlbox(rect, html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
 
 
-class MaterialBuild:
+    def save_and_close(self, output_file):
+        self.doc.save(output_file)
+        self.doc.close()
+
+
+class JobCardData:
 
     def __init__(self):
         pass
@@ -81,40 +89,33 @@ class MaterialBuild:
 
         return build_data
 
-# run the script
+# program entry point
 
 if __name__ == '__main__':
 
     try:
         # settings
 
-        template_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Example job card.pdf'
+        source_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Example job card.pdf'
         build_data_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Build Example.xlsx'
         output_file = './content/drive/My Drive/Aspire/Aspire Production/Mattress Builds/Modified Example job card.pdf'
 
         # read the build data from the excel file
 
-        build_data = MaterialBuild.get_all(build_data_file, sheet_name='Sheet1')
+        build_data = JobCardData.get_all(build_data_file, sheet_name='Sheet1')
 
         # open the job card template
 
-        doc = JobCardDocument.get_job_card_template(template_file)
+        doc = JobCardDocument(source_file)
 
-        for page_num, page in enumerate(doc):
-            
-            sku_prefix = JobCardDocument.extract_sku(page)
+        doc.build(build_data)
 
-            if sku_prefix and build_data['SKU'].str.contains(sku_prefix).any():
-                build_info = build_data[build_data['SKU'].str.startswith(sku_prefix)]['Build'].iloc[0]
-                
-            JobCardDocument.append_build(build_info, page)
-
-        doc.save(output_file)
-        doc.close()
+        doc.save_and_close(output_file)
 
         print("**************************************************************")
         print("* Modified PDF with adjusted text properties has been saved. *")
         print("**************************************************************")
+    
     except Exception as e:
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
