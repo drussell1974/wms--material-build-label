@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "python": "${workspaceRoot}/.venv/mattress_build/bin/python3",
-            "program": "${workspaceFolder}/src/mattress_build/Mattress_Builds.py",
+            "program": "${workspaceFolder}/src/mattress_build/app/Mattress_Builds.py",
             "console": "integratedTerminal"
         },
         {
