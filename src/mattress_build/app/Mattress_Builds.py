@@ -28,7 +28,8 @@ class JobCardDocument:
     ''' private methods '''
 
     def _extract_sku(self, page):
-
+        """ extract the SKU from the page """
+        
         text = page.get_text("text")
         lines = text.split('\n')
         for i, line in enumerate(lines):
@@ -65,7 +66,7 @@ class JobCardDocument:
     ''' public methods '''
 
     def generate_new_label(self, table_name="Builds"):
-        # read the build data from the excel file
+        """ process the build_data and append the build information to the PDF """
 
         build_data = JobCardData.get_all(self.source_data, table_name=table_name)
 
