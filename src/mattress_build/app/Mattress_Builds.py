@@ -22,6 +22,7 @@ class JobCardDocument:
     def __init__(self, source_file, source_data):
         self.doc = fitz.open(source_file)
         self.source_data = source_data
+        self.pages = []
 
 
     ''' private methods '''
@@ -44,8 +45,10 @@ class JobCardDocument:
         <body>
             <table>
             """
+        
         for line in build_info.split(';'):
             html += f"<tr><td>{line.strip()}</td></tr>"
+        
         html += """
             </table>
         </body>
@@ -73,6 +76,7 @@ class JobCardDocument:
                 build_info = build_data[build_data['SKU'].str.startswith(sku_prefix)]['Build'].iloc[0]
                     
             self._append_html(build_info, page)
+        
 
 
     def save_and_close(self, output_file):
