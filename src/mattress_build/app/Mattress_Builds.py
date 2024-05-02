@@ -39,7 +39,6 @@ class JobCardDocument:
             if 'SKU Code:' in line and i+1 < len(lines):
                 sku = lines[i+1].strip()
                 sku_prefix = sku.split('-')[0] if '-' in sku else sku
-        print("def _extract_sku(...) - sku_prefix:", sku_prefix)
         return sku_prefix
 
 
@@ -47,7 +46,8 @@ class JobCardDocument:
         """ append the build information to the page as an html table"""
         
         text = ""
-        for line in build_data.all() if build_data is None else []:
+        print(build_data)
+        for line in build_data:
             text = text + f"<tr><td>{line.strip()}</td></tr>"
         
         self.html = f"<body><table>{text}</table></body>"
@@ -148,7 +148,7 @@ class JobCardDataAccess:
                     # exit the loop
                     break
                 else:
-                    print("adding item to build_data:", build_item)
+                    # adding item to build_data
                     build_data.append(build_item)
         
         return build_data
