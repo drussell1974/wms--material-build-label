@@ -42,13 +42,13 @@ class JobCardDocument:
         return sku_prefix
 
 
-    def _append_html(self, page, build_data):
+    def _append_html(self, page, build_data, font_size="10vw"):
         """ append the build information to the page as an html table"""
         
         text = ""
-        print(build_data)
+        
         for line in build_data:
-            text = text + f"<tr><td>{line.strip()}</td></tr>"
+            text = text + f"<tr><td>{line[0].strip()}</td><td>{line[1]}</td></tr>"
         
         self.html = f"<body><table>{text}</table></body>"
 
@@ -57,7 +57,7 @@ class JobCardDocument:
         rect = page.rect + (5, 250, -5, -5)
 
         # we must specify an Archive because of the image
-        page.insert_htmlbox(rect, self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
+        page.insert_htmlbox(rect, self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:" + str(font_size) + ";}")
 
 
     def _get_doc_pages(self):
@@ -157,7 +157,7 @@ class JobCardDataAccess:
                         break
                     else:
                         # adding item to build_data
-                        build_data.append(build_item)
+                        build_data.append((build_item, 0))
     
         except KeyError as ky_err:
             if on_jobcarddataaccess_error is not None:

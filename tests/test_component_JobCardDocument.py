@@ -21,7 +21,7 @@ class test_component_JobCardDocument(TestCase):
     }
 
     fake_full_dataset = pd.DataFrame(data, columns=['SKU','Build'])
-    fake_build_cols = ['Quilted Panel - Cool Touch Diamond (Tac & Jump Box)','8mm Memory Foam; Superfirm Polyester 400g','Titan Pad','Bonnell Spring Unit','Titan Pad','Superfirm Polyester 400g','Cut Panel - Grey Needle Punch','7.5" Border - Diamond - Plain White Damask']
+    fake_build_cols = [('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', 999),('8mm Memory Foam; Superfirm Polyester 400g', 1),('Titan Pad',3),('Bonnell Spring Unit', 999),('Titan Pad', 0),('Superfirm Polyester 400g','Cut Panel - Grey Needle Punch', 1000),('7.5" Border - Diamond - Plain White Damask', 64)]
     
     
     def setUp(self):        
