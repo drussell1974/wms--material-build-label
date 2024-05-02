@@ -42,13 +42,14 @@ class JobCardDocument:
         return sku_prefix
 
 
-    def _append_html(self, page, build_data, font_size="10vw"):
-        """ append the build information to the page as an html table"""
-        
-        text = ""
+    def _append_html(self, page, build_data, font_size_pt=10):
+        """ append the build information to the page as an html table"""        
+        text = "NO ITEMS FOUND"
+
+        # adjust font size for the number of items (handle divide by zero error)
+        font_size_pt = font_size_pt if len(build_data) == 11 else 10 * (11 / len(build_data))
         
         for line in build_data:
-            #text = text + f"<tr><td>{line}</td></tr>" #
             text = text + f"<tr><td>{line[0].strip()}</td><td>{line[1]}</td></tr>"
         
         self.html = f"<body><table>{text}</table></body>"
@@ -57,7 +58,7 @@ class JobCardDocument:
         rect = page.rect + (5, 250, -5, -5)
 
         # we must specify an Archive because of the image
-        page.insert_htmlbox(rect, self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:" + str(font_size) + ";}")
+        page.insert_htmlbox(rect, self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:" + str(font_size_pt) + "pt;}")
 
 
     def _get_doc_pages(self):
@@ -124,6 +125,7 @@ class JobCardDataAccess:
         """ get the build information for the SKU prefix
             return: string with semi-colon seperated values of data """
         ''' ref https://pandas.pydata.org/pandas-docs/version/1.3/user_guide/indexing.html#indexing-lookup '''
+        print("get_build_data for sku_prefix:", sku_prefix)
         # initialise return value as None
         build_data = []
         
