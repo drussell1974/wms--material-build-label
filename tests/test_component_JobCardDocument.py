@@ -92,8 +92,10 @@ class test_component_JobCardDocument(TestCase):
             self.assertEqual(2, mock_sku_data.call_count)
 
             self.maxDiff = None
-            self.assertEqual('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', self.model.build_data[0], "Should be first item 'Quilted Panel - Cool Touch Diamond (Tac & Jump Box)'")
-            self.assertEqual('7.5" Border - Diamond - Plain White Damask', self.model.build_data[7], "Should be last item ' Cut Panel - Grey Needle Punch'")
+            self.assertEqual(7, len(self.model.build_data))
+            self.assertEqual(2, len(self.model.pages))
+            self.assertEqual(('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', 999), self.model.build_data[0], "Should be first item 'Quilted Panel - Cool Touch Diamond (Tac & Jump Box)'")
+            self.assertEqual(('7.5" Border - Diamond - Plain White Damask', 64), self.model.build_data[6], "Should be last item ' Cut Panel - Grey Needle Punch'")
             self.assertEqual(2, len(self.model.pages))
             #self.assertEqual("<body><table><tr><td></td></tr><tr><td>Quilted Panel - Cool Touch Diamond (Tac & Jump Box)</td></tr><tr><td> Cut Panel - Grey Needle Punch</td></tr></table></body>", self.model.html)
 

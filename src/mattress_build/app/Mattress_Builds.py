@@ -48,12 +48,12 @@ class JobCardDocument:
         text = ""
         
         for line in build_data:
+            #text = text + f"<tr><td>{line}</td></tr>" #
             text = text + f"<tr><td>{line[0].strip()}</td><td>{line[1]}</td></tr>"
         
         self.html = f"<body><table>{text}</table></body>"
 
         # set the area for the bill of materials textarea
-
         rect = page.rect + (5, 250, -5, -5)
 
         # we must specify an Archive because of the image
@@ -100,7 +100,7 @@ class JobCardDataAccess:
     SKU_PREFIX_COL_NAME = 'Pick'
     SKU_COL_NAME = 'Sku'
     MATERIALS_COL_NAME = 'Unnamed: 4'
-    QTY_COL_NAME = 'Qty'
+    QTY_COL_NAME = 'Unnamed: 5'
     # NOTE: values to be treated as empty (Upper case for case insensitivity)
     EMPTY_MATERIAL_VALUES = ["", "X", "MATERIAL"]
 
@@ -145,20 +145,21 @@ class JobCardDataAccess:
                 # get materials and qty columns
                 df_materials_rows = pd.DataFrame(df_all_below_first_line, columns=[cls.MATERIALS_COL_NAME, cls.QTY_COL_NAME])
                 # find first empty row
-                df_materials_rows = df_materials_rows.fillna('')
+                all_build_data = df_materials_rows.fillna('')
                 
-                # get the material value for the selected row then but check the cls.SKU_PREFIX_COL_NAME column is not a sku
-                all_build_data = df_materials_rows[cls.MATERIALS_COL_NAME] #.str.cat(sep=';')
+                # get the material and qty
+                # TODO: value for the selected row then but check the cls.SKU_PREFIX_COL_NAME column is not a sku
+                
                 # get rows until the first empty row
-                for build_item in all_build_data:
+                for build_item in all_build_data.values:
                     # check if the item is empty 
-                    if build_item.strip(" ").upper() in cls.EMPTY_MATERIAL_VALUES:
+                    if len(build_item) > 0 and build_item[0].strip(" ").upper() in cls.EMPTY_MATERIAL_VALUES:
                         # final item reached - exit the loop
                         break
                     else:
-                        # adding item to build_data
-                        build_data.append((build_item, 0))
-    
+                        # adding item material and qty to build_data as tuple (two values per item)
+                        build_data.append((build_item[0], build_item[1]))
+                
         except KeyError as ky_err:
             if on_jobcarddataaccess_error is not None:
                 on_jobcarddataaccess_error(ky_err, **kwargs)
