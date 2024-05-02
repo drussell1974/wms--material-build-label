@@ -57,12 +57,12 @@ class JobCardDocument:
         rect = page.rect + (5, 250, -5, -5)
 
         # we must specify an Archive because of the image
-        page.insert_htmlbox(rect, self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
+        page.insert_htmlbox(rect, self.self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
 
 
     def _get_doc_pages(self):
         return enumerate(self.doc)
-
+    
 
     ''' public methods '''
 
@@ -96,10 +96,9 @@ class JobCardDataAccess:
     # NOTE: values to be treated as empty (Upper case for case insensitivity)
     EMPTY_MATERIAL_VALUES = ["", "X", "MATERIAL"]
 
-    @staticmethod
+    @classmethod
     def cleanse(data, column):
-        """ cleanse the data by filling NaN values with empty strings """
-        
+        """ cleanse the data by filling NaN values with empty strings """        
         data[column] = data[column].fillna('')
         return data
         
@@ -119,7 +118,7 @@ class JobCardDataAccess:
         ''' ref https://pandas.pydata.org/pandas-docs/version/1.3/user_guide/indexing.html#indexing-lookup '''
         
         # initialise return value as None
-        arr_build_data = []
+        build_data = []
         
         # clean the data and add to a dataframe for lookup
         df_all_rows = pd.DataFrame(full_dataset, columns=[cls.SKU_PREFIX_COL_NAME, cls.SKU_COL_NAME, cls.MATERIALS_COL_NAME, cls.QTY_COL_NAME])
@@ -150,10 +149,9 @@ class JobCardDataAccess:
                     break
                 else:
                     print("adding item to build_data:", build_item)
-                    arr_build_data.append(build_item)
+                    build_data.append(build_item)
         
-        # combine each item seperated with a semi-colon
-        return ";".join(arr_build_data)
+        return build_data
 
 
 # program entry point
@@ -166,7 +164,7 @@ if __name__ == '__main__':
         source_file = './tests/data/Example job card.pdf'
         full_dataset_file = './tests/data/Build Example v2.xlsx'
         output_file = './tests/data/Modified Example job card.pdf'
-
+        
         # open the job card template
 
         doc = JobCardDocument(source_file, full_dataset_file)
