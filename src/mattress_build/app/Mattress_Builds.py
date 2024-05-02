@@ -57,7 +57,7 @@ class JobCardDocument:
         rect = page.rect + (5, 250, -5, -5)
 
         # we must specify an Archive because of the image
-        page.insert_htmlbox(rect, self.self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
+        page.insert_htmlbox(rect, self.html, archive=fitz.Archive("."), css="* {font-family: sans-serif;font-size:8px;}")
 
 
     def _get_doc_pages(self):
@@ -96,7 +96,7 @@ class JobCardDataAccess:
     # NOTE: values to be treated as empty (Upper case for case insensitivity)
     EMPTY_MATERIAL_VALUES = ["", "X", "MATERIAL"]
 
-    @classmethod
+    @staticmethod
     def cleanse(data, column):
         """ cleanse the data by filling NaN values with empty strings """        
         data[column] = data[column].fillna('')
