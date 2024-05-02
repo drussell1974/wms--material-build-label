@@ -15,6 +15,18 @@ python3 -m unittest test_component_JobCardDocument.py
 ### google drive ###
 
 
-
 ## build
 
+
+# folder structure
+
+'''
+-   <SOLUTION>
+    - src
+        - <application>     (UI)
+        - models            (BLL)
+        - dataaccess        (DAL)
+    - test
+        - data
+        - unit
+'''

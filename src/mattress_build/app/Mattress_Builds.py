@@ -16,14 +16,14 @@ Read the build data from an Excel file and apply it to the PDF job card.
 import fitz  # PyMuPDF
 import pandas as pd
 
-
 class JobCardDocument:
-
+    """ class to handle the job card document """
+    
     def __init__(self, source_file, source_data):
 
         self.doc = fitz.open(source_file)
         self.source_data = source_data
-        self.build_info = None
+        self.build_data = None
         self.pages = []
         self.html = ""
 
@@ -32,22 +32,24 @@ class JobCardDocument:
 
     def _extract_sku(self, page):
         """ extract the SKU from the page """
-        
+        sku_prefix = None
         text = page.get_text("text")
         lines = text.split('\n')
         for i, line in enumerate(lines):
             if 'SKU Code:' in line and i+1 < len(lines):
                 sku = lines[i+1].strip()
-                return sku.split('-')[0] if '-' in sku else sku
-        return None
+                sku_prefix = sku.split('-')[0] if '-' in sku else sku
+        print("def _extract_sku(...) - sku_prefix:", sku_prefix)
+        return sku_prefix
 
 
-    def _append_html(self, page, build_info):
+    def _append_html(self, page, build_data):
         """ append the build information to the page as an html table"""
         
         text = ""
-        for line in build_info:
+        for line in build_data.all() if build_data is None else []:
             text = text + f"<tr><td>{line.strip()}</td></tr>"
+        
         self.html = f"<body><table>{text}</table></body>"
 
         # set the area for the bill of materials textarea
@@ -65,18 +67,18 @@ class JobCardDocument:
     ''' public methods '''
 
     def generate_new_label(self, table_name="Builds"):
-        """ process the build_data and append the build information to the PDF """
+        """ process the full_dataset and append the build information to the PDF """
 
-        build_data = JobCardData.get_all(self.source_data, table_name=table_name)
+        full_dataset = JobCardDataAccess.get_all(self.source_data, table_name=table_name)
 
         for page_num, page in self._get_doc_pages():
             sku_prefix = self._extract_sku(page)
             
-            self.build_info = JobCardData.get_build_info(build_data, sku_prefix)
+            self.build_data = JobCardDataAccess.get_build_data(full_dataset, sku_prefix)
             
-            self._append_html(page, self.build_info)
-
-            self.pages.append(page)
+            if self.build_data is not None:
+                self._append_html(page, self.build_data)
+                self.pages.append(page)
 
 
     def save_and_close(self, output_file):
@@ -84,40 +86,74 @@ class JobCardDocument:
         self.doc.close()
 
 
-class JobCardData:
+class JobCardDataAccess:
+    """ class to handle the fetching and processing of the job card data """
 
-    def __init__(self):
-        pass
+    SKU_PREFIX_COL_NAME = 'Pick'
+    SKU_COL_NAME = 'Sku'
+    MATERIALS_COL_NAME = 'Unnamed: 4'
+    QTY_COL_NAME = 'Qty'
+    # NOTE: values to be treated as empty (Upper case for case insensitivity)
+    EMPTY_MATERIAL_VALUES = ["", "X", "MATERIAL"]
 
     @staticmethod
-    def get_all(source, table_name='Builds'):
+    def cleanse(data, column):
+        """ cleanse the data by filling NaN values with empty strings """
+        
+        data[column] = data[column].fillna('')
+        return data
+        
+
+    @classmethod
+    def get_all(cls, source, table_name='Builds'):
         """ get all build data from the excel source file """
 
-        build_data = pd.read_excel(source, sheet_name=table_name)
-        build_data['SKU'] = build_data['SKU'].fillna('')
+        sku_data = cls.cleanse(pd.read_excel(source, sheet_name=table_name), cls.SKU_COL_NAME)        
+        return sku_data
 
-        print(build_data['SKU'])
-        print(type(build_data['SKU']))
-
-        return build_data
     
-
-    @staticmethod
-    def get_build_info(build_data, sku_prefix):
-        """ get the build information for the SKU prefix """
-        build_cols = None
+    @classmethod
+    def get_build_data(cls, full_dataset, sku_prefix):
+        """ get the build information for the SKU prefix
+            return: string with semi-colon seperated values of data """
+        ''' ref https://pandas.pydata.org/pandas-docs/version/1.3/user_guide/indexing.html#indexing-lookup '''
         
-        if sku_prefix and build_data['SKU'].str.contains(sku_prefix).any():
-            sku = build_data['SKU'].str.startswith(sku_prefix)
-            sku_build_data = build_data[sku]
-            #print("get sku_build_data['Build']...", sku_build_data)
-            build_cols = sku_build_data['Build']
-            #print("get - (build_cols:", build_cols, ", type:", type(build_cols), ")...")
-            build_cols = build_cols.iloc[0]
-        print("build_cols", build_cols)
-        print(type(build_cols))
-
-        return build_cols
+        # initialise return value as None
+        arr_build_data = []
+        
+        # clean the data and add to a dataframe for lookup
+        df_all_rows = pd.DataFrame(full_dataset, columns=[cls.SKU_PREFIX_COL_NAME, cls.SKU_COL_NAME, cls.MATERIALS_COL_NAME, cls.QTY_COL_NAME])
+        
+        # get row for selected sku_prefix
+        df_subset_first_line = df_all_rows[df_all_rows[cls.SKU_PREFIX_COL_NAME].str.contains(sku_prefix, na=False)]
+        
+        # check if this is the first row containing the value 'Material' in the column
+        if df_subset_first_line.values[0][2] != "Material":
+            '''raise error to be caught by the calling function e.g. to be displayed or logged'''
+            raise KeyError("The line does no contain the value 'Material' column.", "row:", df_subset_first_line.values[0], "expected value='Material', actual value='", df_subset_first_line.values[0][2], "'")    
+        
+        else:
+            '''get the build data from rows below the selected line (ensure fillna has been applied to the dataframe)''' 
+            df_all_below_first_line = df_all_rows[df_all_rows.index > df_subset_first_line.index[0]]
+            # get materials and qty columns
+            df_materials_rows = pd.DataFrame(df_all_below_first_line, columns=[cls.MATERIALS_COL_NAME, cls.QTY_COL_NAME])
+            # find first empty row
+            df_materials_rows = df_materials_rows.fillna('')
+            
+            # get the material value for the selected row then but check the cls.SKU_PREFIX_COL_NAME column is not a sku
+            all_build_data = df_materials_rows[cls.MATERIALS_COL_NAME] #.str.cat(sep=';')
+            # get rows until the first empty row
+            for build_item in all_build_data:
+                # check if the item is empty 
+                if build_item.strip(" ").upper() in cls.EMPTY_MATERIAL_VALUES:
+                    # exit the loop
+                    break
+                else:
+                    print("adding item to build_data:", build_item)
+                    arr_build_data.append(build_item)
+        
+        # combine each item seperated with a semi-colon
+        return ";".join(arr_build_data)
 
 
 # program entry point
@@ -128,14 +164,14 @@ if __name__ == '__main__':
         # settings
 
         source_file = './tests/data/Example job card.pdf'
-        build_data_file = './tests/data/Build Example v1.xlsx'
+        full_dataset_file = './tests/data/Build Example v2.xlsx'
         output_file = './tests/data/Modified Example job card.pdf'
 
         # open the job card template
 
-        doc = JobCardDocument(source_file, build_data_file)
+        doc = JobCardDocument(source_file, full_dataset_file)
 
-        doc.generate_new_label("Sheet1")
+        doc.generate_new_label("Builds")
         
         doc.save_and_close(output_file)
 

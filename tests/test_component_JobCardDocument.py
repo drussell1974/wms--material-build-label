@@ -5,7 +5,7 @@ import pandas as pd
 
 from unittest import TestCase, skip, main
 from unittest.mock import MagicMock, Mock, patch
-from mattress_build.app.Mattress_Builds import JobCardDocument, JobCardData
+from mattress_build.app.Mattress_Builds import JobCardDocument, JobCardDataAccess
 
 class test_component_JobCardDocument(TestCase):
     
@@ -20,7 +20,7 @@ class test_component_JobCardDocument(TestCase):
         'Build':[s1, s2]
     }
 
-    fake_build_data = pd.DataFrame(data, columns=['SKU','Build'])
+    fake_full_dataset = pd.DataFrame(data, columns=['SKU','Build'])
     fake_build_cols = ['Quilted Panel - Cool Touch Diamond (Tac & Jump Box)','8mm Memory Foam; Superfirm Polyester 400g','Titan Pad','Bonnell Spring Unit','Titan Pad','Superfirm Polyester 400g','Cut Panel - Grey Needle Punch','7.5" Border - Diamond - Plain White Damask']
     
     
@@ -32,7 +32,7 @@ class test_component_JobCardDocument(TestCase):
         pass
 
 
-    @patch.object(JobCardData, "get_all", side_effect=Exception)
+    @patch.object(JobCardDataAccess, "get_all", side_effect=Exception)
     def test_init_called_publish__with_exception(self, mock_datasource):
         
         # arrange        
@@ -44,12 +44,12 @@ class test_component_JobCardDocument(TestCase):
 
         # assert
         self.assertEqual(1, mock_datasource.call_count)
-        self.assertIsNone(self.model.build_info)
+        self.assertIsNone(self.model.build_data)
         self.assertEqual(0, len(self.model.pages))
         self.assertEqual("", self.model.html)
         
 
-    @patch.object(JobCardData, "get_all", return_value=[])
+    @patch.object(JobCardDataAccess, "get_all", return_value=[])
     def test_init_called_build__datasource_return_no_rows(self, mock_datasource):
         
         # arrange
@@ -64,13 +64,13 @@ class test_component_JobCardDocument(TestCase):
             self.assertEqual(1, mock_datasource.call_count)
             self.assertEqual(1, JobCardDocument._get_doc_pages.call_count)
 
-            self.assertIsNone(self.model.build_info)
+            self.assertIsNone(self.model.build_data)
             self.assertEqual(0, len(self.model.pages))
             self.assertEqual("", self.model.html)
 
 
-    @patch.object(JobCardData, "get_all", return_value=fake_build_data)
-    @patch.object(JobCardData, "get_build_info", return_value=fake_build_cols)
+    @patch.object(JobCardDataAccess, "get_all", return_value=fake_full_dataset)
+    @patch.object(JobCardDataAccess, "get_build_data", return_value=fake_build_cols)
     def test_init_called_build__datasource_return_multiple_items(self, mock_sku_data, mock_datasource):
         
         # arrange
@@ -92,8 +92,8 @@ class test_component_JobCardDocument(TestCase):
             self.assertEqual(2, mock_sku_data.call_count)
 
             self.maxDiff = None
-            self.assertEqual('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', self.model.build_info[0], "Should be first item 'Quilted Panel - Cool Touch Diamond (Tac & Jump Box)'")
-            self.assertEqual('7.5" Border - Diamond - Plain White Damask', self.model.build_info[7], "Should be last item ' Cut Panel - Grey Needle Punch'")
+            self.assertEqual('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', self.model.build_data[0], "Should be first item 'Quilted Panel - Cool Touch Diamond (Tac & Jump Box)'")
+            self.assertEqual('7.5" Border - Diamond - Plain White Damask', self.model.build_data[7], "Should be last item ' Cut Panel - Grey Needle Punch'")
             self.assertEqual(2, len(self.model.pages))
             #self.assertEqual("<body><table><tr><td></td></tr><tr><td>Quilted Panel - Cool Touch Diamond (Tac & Jump Box)</td></tr><tr><td> Cut Panel - Grey Needle Punch</td></tr></table></body>", self.model.html)
 
