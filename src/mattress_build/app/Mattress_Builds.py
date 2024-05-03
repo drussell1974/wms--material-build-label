@@ -27,7 +27,9 @@ class JobCardDocument:
         self.pages = []
         self.html = ""
 
+    ''' properties '''
 
+    
     ''' private methods '''
 
     def _extract_sku(self, page):
@@ -44,11 +46,16 @@ class JobCardDocument:
 
     def _append_html(self, page, build_data, font_size_pt=10):
         """ append the build information to the page as an html table"""        
-        text = "NO ITEMS FOUND"
+        SHRINK_FONT_WHEN_ROWS = 12
 
-        # adjust font size for the number of items (handle divide by zero error)
-        font_size_pt = font_size_pt if len(build_data) == 11 else 10 * (11 / len(build_data))
+        text = ""
         
+        if len(build_data) > SHRINK_FONT_WHEN_ROWS:
+            # adjust font size for the number of items (TODO: handle divide by zero error)
+            font_size_pt * (SHRINK_FONT_WHEN_ROWS / len(build_data))
+        
+        # build the html table
+
         for line in build_data:
             text = text + f"<tr><td>{line[0].strip()}</td><td>{line[1]}</td></tr>"
         
@@ -125,7 +132,7 @@ class JobCardDataAccess:
         """ get the build information for the SKU prefix
             return: string with semi-colon seperated values of data """
         ''' ref https://pandas.pydata.org/pandas-docs/version/1.3/user_guide/indexing.html#indexing-lookup '''
-        print("get_build_data for sku_prefix:", sku_prefix)
+        
         # initialise return value as None
         build_data = []
         

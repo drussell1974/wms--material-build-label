@@ -20,10 +20,30 @@ class test_component_JobCardDocument(TestCase):
         'Build':[s1, s2]
     }
 
+    # 1-d array of strings
+    """fake_full_dataset = pd.DataFrame(data, columns=['SKU','Build'])
+    fake_bill_of_materials = [
+        'Quilted Panel - Cool Touch Diamond (Tac & Jump Box)',
+        '8mm Memory Foam; Superfirm Polyester 400g',
+        'Titan Pad',
+        'Bonnell Spring Unit',
+        'Titan Pad',
+        'Superfirm Polyester 400g','Cut Panel - Grey Needle Punch',
+        '7.5" Border - Diamond - Plain White Damask'
+    ]"""
+    
+    # 2-d array of strings (material) and integers (qty)
     fake_full_dataset = pd.DataFrame(data, columns=['SKU','Build'])
-    fake_build_cols = [('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', 999),('8mm Memory Foam; Superfirm Polyester 400g', 1),('Titan Pad',3),('Bonnell Spring Unit', 999),('Titan Pad', 0),('Superfirm Polyester 400g','Cut Panel - Grey Needle Punch', 1000),('7.5" Border - Diamond - Plain White Damask', 64)]
-    
-    
+    fake_bill_of_materials = [
+        ('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', 999),
+        ('8mm Memory Foam; Superfirm Polyester 400g', 1),
+        ('Titan Pad',3),
+        ('Bonnell Spring Unit', 999),
+        ('Titan Pad', 0),
+        ('Superfirm Polyester 400g','Cut Panel - Grey Needle Punch', 1000),
+        ('7.5" Border - Diamond - Plain White Damask', 64)
+    ]
+        
     def setUp(self):        
         pass 
 
@@ -33,14 +53,14 @@ class test_component_JobCardDocument(TestCase):
 
 
     @patch.object(JobCardDataAccess, "get_all", side_effect=Exception)
-    def test_init_called_publish__with_exception(self, mock_datasource):
+    def test_generate_new_label__raises_exception(self, mock_datasource):
         
         # arrange        
         self.model = JobCardDocument(source_file="", source_data="")
 
         with self.assertRaises(Exception):
             # act
-            self.model.generate_new_label("Sheet1")
+            self.model.generate_new_label()
 
         # assert
         self.assertEqual(1, mock_datasource.call_count)
@@ -50,7 +70,7 @@ class test_component_JobCardDocument(TestCase):
         
 
     @patch.object(JobCardDataAccess, "get_all", return_value=[])
-    def test_init_called_build__datasource_return_no_rows(self, mock_datasource):
+    def test_generate_new_label__datasource_returns_no_rows(self, mock_datasource):
         
         # arrange
         
@@ -58,7 +78,7 @@ class test_component_JobCardDocument(TestCase):
             # act
             self.model = JobCardDocument(source_file="", source_data="")
 
-            self.model.generate_new_label("Sheet1")
+            self.model.generate_new_label()
 
             # assert
             self.assertEqual(1, mock_datasource.call_count)
@@ -70,12 +90,12 @@ class test_component_JobCardDocument(TestCase):
 
 
     @patch.object(JobCardDataAccess, "get_all", return_value=fake_full_dataset)
-    @patch.object(JobCardDataAccess, "get_build_data", return_value=fake_build_cols)
-    def test_init_called_build__datasource_return_multiple_items(self, mock_sku_data, mock_datasource):
+    @patch.object(JobCardDataAccess, "get_build_data", return_value=fake_bill_of_materials)
+    def test_generate_new_label__datasource_returns_multiple_items(self, mock_sku_data, mock_datasource):
         
         # arrange
-        fake_text = '227163\n02/04/24\nDue Date:\nOrder:\n8" Rolled Matt - Aspire Cool Diamond Tile\nQuilted - Double Comfort Non Memory Core\n- White Aspire Cool Diamond Border - 4ft6\n8B-AC-FF-WB-46\nSKU Code:\nAA8-46\nPO 02.04\nPowered by TCPDF (www.tcpdf.org)'
-
+        fake_text = 'Loreem ipsum'
+    
         mock_page = MagicMock()
         mock_page.get_text = MagicMock(return_value=fake_text)
         
@@ -97,7 +117,12 @@ class test_component_JobCardDocument(TestCase):
             self.assertEqual(('Quilted Panel - Cool Touch Diamond (Tac & Jump Box)', 999), self.model.build_data[0], "Should be first item 'Quilted Panel - Cool Touch Diamond (Tac & Jump Box)'")
             self.assertEqual(('7.5" Border - Diamond - Plain White Damask', 64), self.model.build_data[6], "Should be last item ' Cut Panel - Grey Needle Punch'")
             self.assertEqual(2, len(self.model.pages))
-            #self.assertEqual("<body><table><tr><td></td></tr><tr><td>Quilted Panel - Cool Touch Diamond (Tac & Jump Box)</td></tr><tr><td> Cut Panel - Grey Needle Punch</td></tr></table></body>", self.model.html)
+            self.assertEqual('<body><table><tr><td>Quilted Panel - Cool Touch Diamond (Tac & Jump Box)</td><td>999</td></tr><tr><td>8mm Memory Foam; Superfirm Polyester 400g</td><td>1</td></tr><tr><td>Titan Pad</td><td>3</td></tr><tr><td>Bonnell Spring Unit</td><td>999</td></tr><tr><td>Titan Pad</td><td>0</td></tr><tr><td>Superfirm Polyester 400g</td><td>Cut Panel - Grey Needle Punch</td></tr><tr><td>7.5" Border - Diamond - Plain White Damask</td><td>64</td></tr></table></body>', self.model.html)
+
+    
+    def test_generate_new_label__datasource_raises_error(self):
+        # TODO: implement test for when datasource raises an error
+        pass
 
 
 if __name__ == '__main__':
